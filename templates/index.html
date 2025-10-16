@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>רשימת צפייה בסרטים</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        input[type="text"] { width: 70%; padding: 8px; }
+        button { padding: 8px 15px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: #eee; margin: 5px 0; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 רשימת הצפייה שלי</h1>
+        <ul>
+            {% for movie in watchlist %}
+                <li>{{ movie.title }}</li>
+            {% else %}
+                <li>הרשימה שלך ריקה.</li>
+            {% endfor %}
+        </ul>
+        <hr>
+        <h2>חיפוש סרטים</h2>
+        <form method="POST" action="/">
+            <input type="text" name="search_query" placeholder="שם הסרט..." required>
+            <button type="submit">חיפוש</button>
+        </form>
+        {% if search_results %}
+            <div class="search-results">
+                <h3>תוצאות חיפוש:</h3>
+                <ul>
+                    {% for movie in search_results %}
+                        <li>
+                            <span>{{ movie.title }} ({{ movie.release_date[:4] }})</span>
+                            <form method="POST" action="/add">
+                                <input type="hidden" name="movie_id" value="{{ movie.id }}">
+                                <input type="hidden" name="movie_title" value="{{ movie.title }}">
+                                <button type="submit">הוסף לרשימה</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
