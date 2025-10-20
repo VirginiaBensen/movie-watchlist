@@ -59,5 +59,4 @@ def add_to_watchlist():
 
 # ---- הרצת האפליקציה ----
 if __name__ == '__main__':
-    # מאזין בכל הממשקים (0.0.0.0), חשוב לדוקר
     app.run(host='0.0.0.0', port=5000, debug=True)
