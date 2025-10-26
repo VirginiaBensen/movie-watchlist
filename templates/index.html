@@ -170,6 +170,13 @@
 <body>
     <div class="container">
         <header>
+    <p style="text-align: center;">
+    {% if session.is_admin %} שלום, <b>ADMIN {{ session.username }}</b>!
+    {% else %}
+        שלום, {{ session.username }}!
+    {% endif %}
+    <a href="{{ url_for('logout') }}" style="color: var(--primary-color);">התנתק</a>
+    </p>
             <h1>מאגר הסרטים</h1>
         </header>
 
