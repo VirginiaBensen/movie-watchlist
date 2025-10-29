@@ -153,5 +153,6 @@ def add_to_watchlist():
     
     return redirect(url_for('index'))
 #test comment
+#Triggering pipeline again
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
