@@ -234,7 +234,7 @@ def recommend():
         prompt_text = f"Recommend one single movie for someone who is feeling {mood} and likes {genre} movies from {era}. Only return the movie title and nothing else."
         
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash') 
+            model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(prompt_text)
             
             movie_title = response.text.strip().strip('"')
@@ -246,8 +246,7 @@ def recommend():
                 flash(f"ה-AI המליץ על סרט ({movie_title}) שלא מצאנו במאגר, נסה שוב.", 'warning')
                 
         except Exception as e:
-            print(f"Error calling Gemini API: {e}")
-            flash("אירעה שגיאה בעת פנייה לשירות ה-AI. ודא שהמפתח שלך נכון ויש לך הרשאות למודל.", 'danger')
+            flash(f"שגיאת API: {str(e)}", 'danger')
             pass
 
     return render_template('recommend.html', recommendation=recommendation)
