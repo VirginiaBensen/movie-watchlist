@@ -1,6 +1,6 @@
 import os
 import requests
-import google.generativeai as genai 
+import google.generativeai as genai
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -47,7 +47,7 @@ TMDB_BASE_URL = "https://api.themoviedb.org/3"
 def process_movie_results(movies):
     processed_list = []
     image_base_url = "https://image.tmdb.org/t/p/w500" 
-
+    
     for movie in movies:
         if movie.get('overview') and movie.get('poster_path'):
             year = movie.get('release_date', 'N/A')[:4]
@@ -113,20 +113,20 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
+        
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             flash('שם משתמש כבר קיים, אנא בחר שם אחר.', 'danger')
             return redirect(url_for('register'))
-
+        
         new_user = User(username=username)
         new_user.set_password(password) 
         db.session.add(new_user)
         db.session.commit()
-
+        
         flash('ההרשמה בוצעה בהצלחה! אנא התחבר.', 'success')
         return redirect(url_for('login'))
-
+        
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -134,9 +134,9 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
+        
         user = User.query.filter_by(username=username).first()
-
+        
         if user and user.check_password(password):
             session['logged_in'] = True
             session['user_id'] = user.id 
@@ -145,7 +145,7 @@ def login():
             return redirect(url_for('index'))
         else:
             flash('שם משתמש או סיסמה שגויים.', 'danger')
-
+            
     return render_template('login.html')
 
 @app.route('/logout')
@@ -160,18 +160,18 @@ def index():
 
     user_id = session.get('user_id')
     user_watchlist = WatchlistMovie.query.filter_by(user_id=user_id).all()
-
+    
     genres = get_genres()
     selected_genre_id = request.args.get('genre_id') 
     search_query = request.form.get('search_query')
-
+    
     context = {
         'watchlist': user_watchlist,
         'search_mode': False,
         'genres': genres,
         'selected_genre_id': selected_genre_id
     }
-
+    
     if request.method == 'POST' and search_query:
         context['movies'] = search_movies(search_query)
         context['search_mode'] = True
@@ -202,7 +202,22 @@ def add_to_watchlist():
         new_movie = WatchlistMovie(tmdb_id=tmdb_id, title=title, user_id=user_id)
         db.session.add(new_movie)
         db.session.commit()
+    
+    return redirect(request.referrer or url_for('index'))
 
+@app.route('/remove', methods=['POST'])
+def remove_from_watchlist():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    tmdb_id = request.form.get('movie_id')
+    user_id = session.get('user_id')
+
+    movie_to_delete = WatchlistMovie.query.filter_by(tmdb_id=tmdb_id, user_id=user_id).first()
+    if movie_to_delete:
+        db.session.delete(movie_to_delete)
+        db.session.commit()
+    
     return redirect(request.referrer or url_for('index'))
 
 @app.route('/recommend', methods=['GET', 'POST'])
@@ -215,21 +230,21 @@ def recommend():
         mood = request.form.get('mood')
         genre = request.form.get('genre')
         era = request.form.get('era')
-
+        
         prompt_text = f"Recommend one single movie for someone who is feeling {mood} and likes {genre} movies from {era}. Only return the movie title and nothing else."
-
+        
         try:
             model = genai.GenerativeModel('gemini-pro')
             response = model.generate_content(prompt_text)
-
+            
             movie_title = response.text.strip().strip('"')
-
+            
             search_results = search_movies(movie_title) 
             if search_results:
-                recommendation = search_results[0] 
+                recommendation = search_results[0]
             else:
                 flash(f"ה-AI המליץ על סרט ({movie_title}) שלא מצאנו במאגר, נסה שוב.", 'warning')
-
+                
         except Exception as e:
             print(f"Error calling Gemini API: {e}")
             flash("אירעה שגיאה בעת פנייה לשירות ה-AI. אנא ודא שהגדרת מפתח API.", 'danger')
