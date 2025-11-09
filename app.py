@@ -234,7 +234,7 @@ def recommend():
         prompt_text = f"Recommend one single movie for someone who is feeling {mood} and likes {genre} movies from {era}. Only return the movie title and nothing else."
         
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-pro') 
             response = model.generate_content(prompt_text)
             
             movie_title = response.text.strip().strip('"')
@@ -253,4 +253,5 @@ def recommend():
 
 
 if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
     app.run(host='0.0.0.0', port=5000, debug=True)
