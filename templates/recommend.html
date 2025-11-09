@@ -13,8 +13,11 @@
             --card-color: #343a40; 
             --text-color: #f8f9fa; 
             --text-muted: #adb5bd; 
-            --primary-color: #0d6efd; 
+            --primary-color: #6f42c1; 
+            --ai-color: #fd7e14; 
             --border-color: #495057;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
         }
         body { font-family: 'Assistant', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 2.5rem; }
         .container { max-width: 1400px; margin: 0 auto; }
@@ -25,7 +28,7 @@
         .form-group label { display: block; margin-bottom: 0.5rem; font-size: 1.1rem; font-weight: 600; }
         .form-input { flex-grow: 1; padding: 0.8rem 1rem; font-size: 1rem; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color); font-family: 'Assistant', sans-serif; }
         .form-select { width: 100%; }
-        .search-button { padding: 0.8rem 1.5rem; font-size: 1rem; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
+        .search-button { padding: 0.8rem 1.5rem; font-size: 1rem; background-color: var(--ai-color); color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600; }
         .section-title { font-size: 1.75rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; }
         .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
         .movie-card { background-color: var(--card-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
@@ -38,6 +41,25 @@
         .add-button { margin-top: 1rem; padding: 0.6rem; width: 100%; background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer; font-weight: 600; }
         .add-button:hover { background-color: var(--primary-color); color: white; }
         .header-link { color: var(--primary-color); text-decoration: none; }
+        
+        .flash-messages {
+            list-style-type: none;
+            padding: 0;
+            margin-bottom: 1.5rem;
+        }
+        .flash-message {
+            padding: 1rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .flash-message.danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        .flash-message.warning {
+            background-color: var(--warning-color);
+            color: #212529;
+        }
     </style>
 </head>
 <body>
@@ -50,6 +72,16 @@
             </p>
             <h1>ממליץ הסרטים AI 🤖</h1>
         </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flash-messages">
+              {% for category, message in messages %}
+                <li class="flash-message {{ category }}">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
 
         <div class="top-section">
             <form action="{{ url_for('recommend') }}" method="POST">
