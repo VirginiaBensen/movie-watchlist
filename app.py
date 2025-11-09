@@ -1,6 +1,6 @@
 import os
 import requests
-import google.generativeai as genai
+import google.generativeai as genai 
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -234,7 +234,7 @@ def recommend():
         prompt_text = f"Recommend one single movie for someone who is feeling {mood} and likes {genre} movies from {era}. Only return the movie title and nothing else."
         
         try:
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel('gemini-1.5-flash') 
             response = model.generate_content(prompt_text)
             
             movie_title = response.text.strip().strip('"')
@@ -247,7 +247,7 @@ def recommend():
                 
         except Exception as e:
             print(f"Error calling Gemini API: {e}")
-            flash("אירעה שגיאה בעת פנייה לשירות ה-AI. אנא ודא שהגדרת מפתח API.", 'danger')
+            flash("אירעה שגיאה בעת פנייה לשירות ה-AI. ודא שהמפתח שלך נכון ויש לך הרשאות למודל.", 'danger')
             pass
 
     return render_template('recommend.html', recommendation=recommendation)
