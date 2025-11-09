@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ממליץ סרטים AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #212529; 
+            --card-color: #343a40; 
+            --text-color: #f8f9fa; 
+            --text-muted: #adb5bd; 
+            --primary-color: #0d6efd; 
+            --border-color: #495057;
+        }
+        body { font-family: 'Assistant', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 2.5rem; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 2.5rem; }
+        h1 { font-size: 2.8rem; font-weight: 600; }
+        .top-section { display: flex; flex-direction: column; gap: 2rem; margin-bottom: 2.5rem; padding: 1.5rem; background-color: var(--card-color); border-radius: 8px; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 1.1rem; font-weight: 600; }
+        .form-input { flex-grow: 1; padding: 0.8rem 1rem; font-size: 1rem; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color); font-family: 'Assistant', sans-serif; }
+        .form-select { width: 100%; }
+        .search-button { padding: 0.8rem 1.5rem; font-size: 1rem; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
+        .section-title { font-size: 1.75rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; }
+        .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+        .movie-card { background-color: var(--card-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+        .movie-poster { width: 100%; height: auto; display: block; }
+        .card-content { padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1; }
+        .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.75rem; }
+        .movie-title { font-size: 1.4rem; font-weight: 600; margin: 0; }
+        .movie-year { font-size: 1rem; color: var(--text-muted); }
+        .movie-overview { font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; flex-grow: 1; }
+        .add-button { margin-top: 1rem; padding: 0.6rem; width: 100%; background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .add-button:hover { background-color: var(--primary-color); color: white; }
+        .header-link { color: var(--primary-color); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 800px;">
+        <header>
+            <p style="text-align: center;">
+                שלום, {{ session.username }}!
+                <a href="{{ url_for('index') }}" class="header-link">חזרה לדף הבית</a> |
+                <a href="{{ url_for('logout') }}" class="header-link">התנתק</a>
+            </p>
+            <h1>ממליץ הסרטים AI 🤖</h1>
+        </header>
+
+        <div class="top-section">
+            <form action="{{ url_for('recommend') }}" method="POST">
+                <div class="form-group">
+                    <label for="mood">איך מצב הרוח שלך היום?</label>
+                    <select id="mood" name="mood" class="form-input form-select">
+                        <option value="happy">שמח/ה</option>
+                        <option value="sad">קצת עצוב/ה</option>
+                        <option value="adventurous">בא לי הרפתקה</option>
+                        <option value="thoughtful">בא לי משהו שיגרום לי לחשוב</option>
+                        <option value="romantic">רומנטי/ת</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="genre">איזה ז'אנר מועדף?</label>
+                    <select id="genre" name="genre" class="form-input form-select">
+                        <option value="comedy">קומדיה</option>
+                        <option value="drama">דרמה</option>
+                        <option value="action">אקשן</option>
+                        <option value="sci-fi">מדע בדיוני</option>
+                        <option value="romance">רומנטיקה</option>
+                        <option value="horror">אימה</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="era">מאיזו תקופה?</label>
+                    <select id="era" name="era" class="form-input form-select">
+                        <option value="classic (pre-1980)">קלאסי (לפני 1980)</option>
+                        <option value="the 80s or 90s">שנות ה-80 או ה-90</option>
+                        <option value="the 2000s">שנות ה-2000</option>
+                        <option value="recent (last 5 years)">מהשנים האחרונות</option>
+                    </select>
+                </div>
+                <button type="submit" class="search-button">קבל המלצה!</button>
+            </form>
+        </div>
+
+        <main>
+            {% if recommendation %}
+                <h2 class="section-title">ה-AI ממליץ לך על...</h2>
+                <div class="movie-grid" style="grid-template-columns: 1fr; max-width: 400px; margin: 0 auto;">
+                    <div class="movie-card">
+                        <img src="{{ recommendation.poster_url }}" alt="פוסטר של {{ recommendation.title }}" class="movie-poster">
+                        <div class="card-content">
+                            <div>
+                                <div class="card-header">
+                                    <h3 class="movie-title">{{ recommendation.title }}</h3>
+                                    <span class="movie-year">{{ recommendation.release_year }}</span>
+                                </div>
+                                <p class="movie-overview">{{ recommendation.overview }}</p>
+                            </div>
+                            <form method="POST" action="/add">
+                                <input type="hidden" name="movie_id" value="{{ recommendation.id }}">
+                                <input type="hidden" name="movie_title" value="{{ recommendation.title }}">
+                                <button type="submit" class="add-button">הוסף לרשימת הצפייה</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </main>
+    </div>
+</body>
+</html>
