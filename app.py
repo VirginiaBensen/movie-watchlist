@@ -1,5 +1,6 @@
 import os
 import requests
+import openai 
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -12,12 +13,13 @@ app.config['SECRET_KEY'] = 'a_super_secret_key_that_should_be_changed'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+openai.api_key = os.environ.get('OPENAI_API_KEY')
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 
 class User(db.Model):
-    """ מודל המשתמשים """
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -31,7 +33,6 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
 class WatchlistMovie(db.Model):
-    """ מודל הסרטים ברשימת הצפייה """
     id = db.Column(db.Integer, primary_key=True)
     tmdb_id = db.Column(db.String(20), nullable=False)
     title = db.Column(db.String(200), nullable=False)
@@ -53,7 +54,6 @@ def process_movie_results(movies):
     return processed_list
 
 def get_genres():
-    """מושך את רשימת הז'אנרים הרשמית מ-TMDB"""
     genres_url = f"{TMDB_BASE_URL}/genre/movie/list"
     params = {'api_key': TMDB_API_KEY, 'language': 'en-US'}
     try:
@@ -64,10 +64,9 @@ def get_genres():
         return []
 
 def get_movies_by_genre(genre_id):
-    """מושך סרטים פופולריים לפי מזהה ז'אנר ספציפי"""
     discover_url = f"{TMDB_BASE_URL}/discover/movie"
     movies = []
-    for page in range(1, 11): # 10 עמודים של תוצאות
+    for page in range(1, 11): 
         params = {
             'api_key': TMDB_API_KEY,
             'language': 'en-US',
@@ -202,6 +201,44 @@ def add_to_watchlist():
         db.session.commit()
     
     return redirect(request.referrer or url_for('index'))
+
+@app.route('/recommend', methods=['GET', 'POST'])
+def recommend():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    recommendation = None
+    if request.method == 'POST':
+        mood = request.form.get('mood')
+        genre = request.form.get('genre')
+        era = request.form.get('era')
+        
+        prompt_text = f"Recommend one single movie for someone who is feeling {mood} and likes {genre} movies from {era}. Only return the movie title and nothing else."
+        
+        try:
+            response = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt_text}],
+                max_tokens=50,
+                n=1,
+                stop=None,
+                temperature=0.7
+            )
+            movie_title = response.choices[0].message.content.strip().strip('"')
+            
+            search_results = search_movies(movie_title) 
+            if search_results:
+                recommendation = search_results[0] 
+            else:
+                flash("ה-AI המליץ על סרט שלא מצאנו במאגר, נסה שוב.", 'warning')
+                
+        except Exception as e:
+            print(f"Error calling OpenAI: {e}")
+            flash("אירעה שגיאה בעת פנייה לשירות ה-AI. אנא ודא שהגדרת מפתח API.", 'danger')
+            pass
+
+    return render_template('recommend.html', recommendation=recommendation)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
