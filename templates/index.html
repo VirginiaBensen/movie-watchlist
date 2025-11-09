@@ -107,7 +107,8 @@
             background-color: var(--card-color);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 1.5rem;
+            padding: 0; 
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             transition: transform 0.2s ease, border-color 0.2s ease;
@@ -116,6 +117,19 @@
         .movie-card:hover {
             transform: translateY(-5px);
             border-color: var(--primary-color);
+        }
+        
+        .movie-poster {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .card-content {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; 
         }
 
         .card-header {
@@ -214,18 +228,22 @@
             <div class="movie-grid">
                 {% for movie in movies %}
                     <div class="movie-card">
-                        <div>
-                            <div class="card-header">
-                                <h3 class="movie-title">{{ movie.title }}</h3>
-                                <span class="movie-year">{{ movie.release_year }}</span>
+                        <img src="{{ movie.poster_url }}" alt="פוסטר של {{ movie.title }}" class="movie-poster">
+                        
+                        <div class="card-content">
+                            <div>
+                                <div class="card-header">
+                                    <h3 class="movie-title">{{ movie.title }}</h3>
+                                    <span class="movie-year">{{ movie.release_year }}</span>
+                                </div>
+                                <p class="movie-overview">{{ movie.overview }}</p>
                             </div>
-                            <p class="movie-overview">{{ movie.overview }}</p>
+                            <form method="POST" action="/add">
+                                <input type="hidden" name="movie_id" value="{{ movie.id }}">
+                                <input type="hidden" name="movie_title" value="{{ movie.title }}">
+                                <button type="submit" class="add-button">הוסף לרשימת הצפייה</button>
+                            </form>
                         </div>
-                        <form method="POST" action="/add">
-                            <input type="hidden" name="movie_id" value="{{ movie.id }}">
-                            <input type="hidden" name="movie_title" value="{{ movie.title }}">
-                            <button type="submit" class="add-button">הוסף לרשימת הצפייה</button>
-                        </form>
                     </div>
                 {% else %}
                     <p class="empty-message">לא נמצאו סרטים.</p>
