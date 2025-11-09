@@ -6,6 +6,8 @@ from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.jinja_env.globals.update(str=str)
+
 app.config['SECRET_KEY'] = 'a_super_secret_key_that_should_be_changed'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -65,7 +67,7 @@ def get_movies_by_genre(genre_id):
     """מושך סרטים פופולריים לפי מזהה ז'אנר ספציפי"""
     discover_url = f"{TMDB_BASE_URL}/discover/movie"
     movies = []
-    for page in range(1, 11): 
+    for page in range(1, 11): # 10 עמודים של תוצאות
         params = {
             'api_key': TMDB_API_KEY,
             'language': 'en-US',
@@ -159,7 +161,7 @@ def index():
     
     genres = get_genres()
     selected_genre_id = request.args.get('genre_id') 
-    search_query = request.form.get('search_query') 
+    search_query = request.form.get('search_query')
     
     context = {
         'watchlist': user_watchlist,
@@ -199,7 +201,7 @@ def add_to_watchlist():
         db.session.add(new_movie)
         db.session.commit()
     
-    return redirect(request.referrer or url_for('index')) 
+    return redirect(request.referrer or url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
