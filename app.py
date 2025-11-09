@@ -23,11 +23,9 @@ class User(db.Model):
     watchlist = db.relationship('WatchlistMovie', backref='user', lazy=True, cascade="all, delete-orphan")
 
     def set_password(self, password):
-        """ יוצר האש (hash) מהסיסמה ושומר אותו """
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        """ בודק אם הסיסמה שהוזנה תואמת להאש השמור """
         return check_password_hash(self.password_hash, password)
 
 class WatchlistMovie(db.Model):
@@ -52,6 +50,40 @@ def process_movie_results(movies):
             processed_list.append(movie)
     return processed_list
 
+def get_genres():
+    """מושך את רשימת הז'אנרים הרשמית מ-TMDB"""
+    genres_url = f"{TMDB_BASE_URL}/genre/movie/list"
+    params = {'api_key': TMDB_API_KEY, 'language': 'en-US'}
+    try:
+        response = requests.get(genres_url, params=params)
+        response.raise_for_status()
+        return response.json().get('genres', [])
+    except:
+        return []
+
+def get_movies_by_genre(genre_id):
+    """מושך סרטים פופולריים לפי מזהה ז'אנר ספציפי"""
+    discover_url = f"{TMDB_BASE_URL}/discover/movie"
+    movies = []
+    for page in range(1, 11): 
+        params = {
+            'api_key': TMDB_API_KEY,
+            'language': 'en-US',
+            'with_genres': genre_id,
+            'sort_by': 'popularity.desc',
+            'page': page
+        }
+        try:
+            response = requests.get(discover_url, params=params)
+            response.raise_for_status()
+            results = response.json().get('results', [])
+            if not results:
+                break
+            movies.extend(results)
+        except:
+            break
+    return process_movie_results(movies)
+
 def get_popular_movies():
     popular_movies = []
     popular_url = f"{TMDB_BASE_URL}/movie/popular"
@@ -64,7 +96,6 @@ def get_popular_movies():
     return process_movie_results(popular_movies)
 
 def search_movies(query):
-    """פונקציה לחיפוש סרטים לפי שאילתה ב-TMDB API"""
     search_url = f"{TMDB_BASE_URL}/search/movie"
     params = {'api_key': TMDB_API_KEY, 'query': query, 'language': 'en-US'}
     try:
@@ -75,17 +106,14 @@ def search_movies(query):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    """ דף הרשמה למשתמשים חדשים """
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
         
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             flash('שם משתמש כבר קיים, אנא בחר שם אחר.', 'danger')
             return redirect(url_for('register'))
-
         
         new_user = User(username=username)
         new_user.set_password(password) 
@@ -99,7 +127,6 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """ דף התחברות """
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -130,14 +157,32 @@ def index():
     user_id = session.get('user_id')
     user_watchlist = WatchlistMovie.query.filter_by(user_id=user_id).all()
     
-    context = { 'watchlist': user_watchlist, 'search_mode': False }
+    genres = get_genres()
+    selected_genre_id = request.args.get('genre_id') 
+    search_query = request.form.get('search_query') 
     
-    if request.method == 'POST' and 'search_query' in request.form:
-        query = request.form.get('search_query')
-        if query: context['movies'] = search_movies(query); context['search_mode'] = True
-    else: context['movies'] = get_popular_movies()
+    context = {
+        'watchlist': user_watchlist,
+        'search_mode': False,
+        'genres': genres,
+        'selected_genre_id': selected_genre_id
+    }
+    
+    if request.method == 'POST' and search_query:
+        context['movies'] = search_movies(search_query)
+        context['search_mode'] = True
+        context['page_title'] = f"תוצאות חיפוש עבור: '{search_query}'"
+    elif selected_genre_id:
+        context['movies'] = get_movies_by_genre(selected_genre_id)
+        context['search_mode'] = True 
+        genre_name = next((g['name'] for g in genres if str(g['id']) == selected_genre_id), "ז'אנר")
+        context['page_title'] = f"סרטים בז'אנר: {genre_name}"
+    else:
+        context['movies'] = get_popular_movies()
+        context['page_title'] = "סרטים פופולריים"
 
     return render_template('index.html', **context)
+
 
 @app.route('/add', methods=['POST'])
 def add_to_watchlist():
@@ -154,7 +199,7 @@ def add_to_watchlist():
         db.session.add(new_movie)
         db.session.commit()
     
-    return redirect(url_for('index'))
+    return redirect(request.referrer or url_for('index')) 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
