@@ -42,17 +42,20 @@ TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
 def process_movie_results(movies):
     processed_list = []
+    image_base_url = "https://image.tmdb.org/t/p/w500" 
+    
     for movie in movies:
-        if movie.get('overview'):
+        if movie.get('overview') and movie.get('poster_path'):
             year = movie.get('release_date', 'N/A')[:4]
             movie['release_year'] = year
+            movie['poster_url'] = f"{image_base_url}{movie['poster_path']}"
             processed_list.append(movie)
     return processed_list
 
 def get_popular_movies():
     popular_movies = []
     popular_url = f"{TMDB_BASE_URL}/movie/popular"
-    for page in range(1, 6):
+    for page in range(1, 11):
         params = {'api_key': TMDB_API_KEY, 'language': 'en-US', 'page': page}
         try:
             response = requests.get(popular_url, params=params)
@@ -152,10 +155,6 @@ def add_to_watchlist():
         db.session.commit()
     
     return redirect(url_for('index'))
-#test comment
-#Triggering pipeline again
-#test comment 3
-#test comment 4
-#test 5
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
