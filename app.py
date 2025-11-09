@@ -1,6 +1,6 @@
 import os
 import requests
-import openai 
+import google.generativeai as genai
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -13,7 +13,10 @@ app.config['SECRET_KEY'] = 'a_super_secret_key_that_should_be_changed'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+try:
+    genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+except Exception as e:
+    print(f"Failed to configure Gemini API: {e}")
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -202,6 +205,21 @@ def add_to_watchlist():
     
     return redirect(request.referrer or url_for('index'))
 
+@app.route('/remove', methods=['POST'])
+def remove_from_watchlist():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    tmdb_id = request.form.get('movie_id')
+    user_id = session.get('user_id')
+
+    movie_to_delete = WatchlistMovie.query.filter_by(tmdb_id=tmdb_id, user_id=user_id).first()
+    if movie_to_delete:
+        db.session.delete(movie_to_delete)
+        db.session.commit()
+    
+    return redirect(request.referrer or url_for('index'))
+
 @app.route('/recommend', methods=['GET', 'POST'])
 def recommend():
     if not session.get('logged_in'):
@@ -216,24 +234,19 @@ def recommend():
         prompt_text = f"Recommend one single movie for someone who is feeling {mood} and likes {genre} movies from {era}. Only return the movie title and nothing else."
         
         try:
-            response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt_text}],
-                max_tokens=50,
-                n=1,
-                stop=None,
-                temperature=0.7
-            )
-            movie_title = response.choices[0].message.content.strip().strip('"')
+            model = genai.GenerativeModel('gemini-pro')
+            response = model.generate_content(prompt_text)
+            
+            movie_title = response.text.strip().strip('"')
             
             search_results = search_movies(movie_title) 
             if search_results:
-                recommendation = search_results[0] 
+                recommendation = search_results[0]
             else:
-                flash("ה-AI המליץ על סרט שלא מצאנו במאגר, נסה שוב.", 'warning')
+                flash(f"ה-AI המליץ על סרט ({movie_title}) שלא מצאנו במאגר, נסה שוב.", 'warning')
                 
         except Exception as e:
-            print(f"Error calling OpenAI: {e}")
+            print(f"Error calling Gemini API: {e}")
             flash("אירעה שגיאה בעת פנייה לשירות ה-AI. אנא ודא שהגדרת מפתח API.", 'danger')
             pass
 

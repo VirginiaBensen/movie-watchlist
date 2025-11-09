@@ -13,9 +13,10 @@
             --card-color: #343a40; 
             --text-color: #f8f9fa; 
             --text-muted: #adb5bd; 
-            --primary-color: #0d6efd; 
+            --primary-color: #6f42c1; 
+            --ai-color: #fd7e14; 
             --border-color: #495057;
-            --ai-color: #6f42c1; 
+            --danger-color: #dc3545;
         }
 
         body {
@@ -110,10 +111,42 @@
         }
         
         .watchlist ul { list-style-type: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        .watchlist li { background-color: var(--bg-color); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.9rem; }
+        
+        .watchlist-item {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            overflow: hidden; 
+        }
+        .watchlist-item span {
+            padding: 0.4rem 0.8rem;
+        }
+        .delete-button {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
 
         .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
-        .movie-card { background-color: var(--card-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s ease, border-color 0.2s ease; }
+        
+        .movie-card { 
+            background-color: var(--card-color); 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            padding: 0; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            transition: transform 0.2s ease, border-color 0.2s ease; 
+            cursor: pointer;
+        }
+        
         .movie-card:hover { transform: translateY(-5px); border-color: var(--primary-color); }
         .movie-poster { width: 100%; height: auto; display: block; }
         .card-content { padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1; }
@@ -121,27 +154,62 @@
         .movie-title { font-size: 1.4rem; font-weight: 600; margin: 0; }
         .movie-year { font-size: 1rem; color: var(--text-muted); }
         .movie-overview { font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; flex-grow: 1; }
-        .add-button { margin-top: 1rem; padding: 0.6rem; width: 100%; background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer; font-weight: 600; transition: background-color 0.2s, color 0.2s; }
+        .add-button { margin-top: 1rem; padding: 0.6rem; width: 100%; background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer; font-weight: 600; }
         .add-button:hover { background-color: var(--primary-color); color: white; }
         .empty-message { color: var(--text-muted); }
 
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; 
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px; 
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            padding: 2rem;
+        }
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            left: 1.5rem; 
+            font-size: 2rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+        }
+        .modal-poster {
+            width: 100%;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-    <p style="text-align: center;">
-    {% if session.is_admin %} שלום, <b>ADMIN {{ session.username }}</b>!
-    {% else %}
-        שלום, {{ session.username }}!
-    {% endif %}
-    <a href="{{ url_for('logout') }}" style="color: var(--primary-color);">התנתק</a>
-    </p>
+            <p style="text-align: center;">
+            {% if session.is_admin %} שלום, <b>ADMIN {{ session.username }}</b>!
+            {% else %}
+                שלום, {{ session.username }}!
+            {% endif %}
+            <a href="{{ url_for('logout') }}" style="color: var(--primary-color);">התנתק</a>
+            </p>
             <h1>מאגר הסרטים</h1>
         </header>
 
         <div class="top-section">
-            
             <a href="{{ url_for('recommend') }}" class="ai-button">
                 🤖 נסה את ממליץ הסרטים ב-AI
             </a>
@@ -175,7 +243,13 @@
                 {% if watchlist %}
                     <ul>
                         {% for movie in watchlist %}
-                            <li>{{ movie.title }}</li>
+                            <li class="watchlist-item">
+                                <span>{{ movie.title }}</span>
+                                <form method="POST" action="/remove">
+                                    <input type="hidden" name="movie_id" value="{{ movie.tmdb_id }}">
+                                    <button type="submit" class="delete-button">X</button>
+                                </form>
+                            </li>
                         {% endfor %}
                     </ul>
                 {% else %}
@@ -191,7 +265,14 @@
 
             <div class="movie-grid">
                 {% for movie in movies %}
-                    <div class="movie-card">
+                    <div class="movie-card" 
+                         data-title="{{ movie.title }}"
+                         data-year="{{ movie.release_year }}"
+                         data-poster="{{ movie.poster_url }}"
+                         data-overview="{{ movie.overview | escape }}"
+                         data-id="{{ movie.id }}"
+                         onclick="openModal(this)">
+                        
                         <img src="{{ movie.poster_url }}" alt="פוסטר של {{ movie.title }}" class="movie-poster">
                         <div class="card-content">
                             <div>
@@ -201,7 +282,7 @@
                                 </div>
                                 <p class="movie-overview">{{ movie.overview }}</p>
                             </div>
-                            <form method="POST" action="/add">
+                            <form method="POST" action="/add" onclick="event.stopPropagation()">
                                 <input type="hidden" name="movie_id" value="{{ movie.id }}">
                                 <input type="hidden" name="movie_title" value="{{ movie.title }}">
                                 <button type="submit" class="add-button">הוסף לרשימת הצפייה</button>
@@ -214,5 +295,56 @@
             </div>
         </main>
     </div>
+
+    <div class="modal-backdrop" id="movie-modal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="modal-close" onclick="closeModal()">×</span>
+            
+            <img src="" alt="פוסטר סרט" class="modal-poster" id="modal-poster">
+            
+            <div class="card-header">
+                <h3 class="movie-title" id="modal-title"></h3>
+                <span class="movie-year" id="modal-year"></span>
+            </div>
+            <p class="movie-overview" id="modal-overview"></p>
+            
+            <form method="POST" action="/add">
+                <input type="hidden" name="movie_id" id="modal-movie-id">
+                <input type="hidden" name="movie_title" id="modal-movie-title">
+                <button type="submit" class="add-button">הוסף לרשימת הצפייה</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('movie-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalYear = document.getElementById('modal-year');
+        const modalPoster = document.getElementById('modal-poster');
+        const modalOverview = document.getElementById('modal-overview');
+        const modalMovieId = document.getElementById('modal-movie-id');
+        const modalMovieTitle = document.getElementById('modal-movie-title');
+
+        function openModal(card) {
+            const title = card.dataset.title;
+            const year = card.dataset.year;
+            const poster = card.dataset.poster;
+            const overview = card.dataset.overview;
+            const id = card.dataset.id;
+            
+            modalTitle.textContent = title;
+            modalYear.textContent = year;
+            modalPoster.src = poster;
+            modalOverview.textContent = overview;
+            modalMovieId.value = id;
+            modalMovieTitle.value = title;
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+    </script>
 </body>
 </html>
