@@ -1,6 +1,6 @@
 import os
 import requests
-import google.generativeai as genai 
+import random 
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -13,10 +13,6 @@ app.config['SECRET_KEY'] = 'a_super_secret_key_that_should_be_changed'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-try:
-    genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
-except Exception as e:
-    print(f"Failed to configure Gemini API: {e}")
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -228,25 +224,54 @@ def recommend():
     recommendation = None
     if request.method == 'POST':
         mood = request.form.get('mood')
-        genre = request.form.get('genre')
         era = request.form.get('era')
         
-        prompt_text = f"Recommend one single movie for someone who is feeling {mood} and likes {genre} movies from {era}. Only return the movie title and nothing else."
+        genre_map = {
+            'happy': '35', 
+            'sad': '18', 
+            'adventurous': '28,12', 
+            'thoughtful': '99,36', 
+            'romantic': '10749' 
+        }
+        
+        era_map = {
+            'classic': ('1900-01-01', '1979-12-31'),
+            '80s90s': ('1980-01-01', '1999-12-31'),
+            '2000s': ('2000-01-01', '2009-12-31'),
+            'recent': ('2010-01-01', '2025-12-31') 
+        }
+        
+        selected_genre_ids = genre_map.get(mood, '35') 
+        start_date, end_date = era_map.get(era, era_map['recent']) 
+        
+        discover_url = f"{TMDB_BASE_URL}/discover/movie"
+        params = {
+            'api_key': TMDB_API_KEY,
+            'language': 'en-US',
+            'with_genres': selected_genre_ids,
+            'primary_release_date.gte': start_date,
+            'primary_release_date.lte': end_date,
+            'sort_by': 'popularity.desc',
+            'page': 1
+        }
         
         try:
-            model = genai.GenerativeModel('gemini-pro') 
-            response = model.generate_content(prompt_text)
+            response = requests.get(discover_url, params=params)
+            response.raise_for_status()
+            results = response.json().get('results', [])
             
-            movie_title = response.text.strip().strip('"')
-            
-            search_results = search_movies(movie_title) 
-            if search_results:
-                recommendation = search_results[0]
+            if results:
+                processed_results = process_movie_results(results)
+                if processed_results:
+                    recommendation = random.choice(processed_results)
+                else:
+                    flash("לא מצאנו סרטים שעונים בדיוק לבקשה שלך (אולי אין להם תמונה/תיאור).", 'warning')
             else:
-                flash(f"ה-AI המליץ על סרט ({movie_title}) שלא מצאנו במאגר, נסה שוב.", 'warning')
-                
+                 flash("לא מצאנו סרטים שעונים לבקשה שלך, נסה שילוב אחר.", 'warning')
+
         except Exception as e:
-            flash(f"שגיאת API: {str(e)}", 'danger')
+            print(f"Error calling TMDB API: {e}")
+            flash("אירעה שגיאה בעת פנייה למאגר הסרטים.", 'danger')
             pass
 
     return render_template('recommend.html', recommendation=recommendation)
@@ -254,5 +279,3 @@ def recommend():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-#test
