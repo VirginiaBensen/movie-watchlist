@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ממליץ סרטים AI</title>
+    <title>ממליץ סרטים</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
             --text-color: #f8f9fa; 
             --text-muted: #adb5bd; 
             --primary-color: #6f42c1; 
-            --ai-color: #fd7e14; 
+            --ai-color: #fd7e14;
             --border-color: #495057;
             --danger-color: #dc3545;
             --warning-color: #ffc107;
@@ -42,24 +42,10 @@
         .add-button:hover { background-color: var(--primary-color); color: white; }
         .header-link { color: var(--primary-color); text-decoration: none; }
         
-        .flash-messages {
-            list-style-type: none;
-            padding: 0;
-            margin-bottom: 1.5rem;
-        }
-        .flash-message {
-            padding: 1rem;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .flash-message.danger {
-            background-color: var(--danger-color);
-            color: white;
-        }
-        .flash-message.warning {
-            background-color: var(--warning-color);
-            color: #212529;
-        }
+        .flash-messages { list-style-type: none; padding: 0; margin-bottom: 1.5rem; }
+        .flash-message { padding: 1rem; border-radius: 4px; font-weight: 600; }
+        .flash-message.danger { background-color: var(--danger-color); color: white; }
+        .flash-message.warning { background-color: var(--warning-color); color: #212529; }
     </style>
 </head>
 <body>
@@ -70,7 +56,7 @@
                 <a href="{{ url_for('index') }}" class="header-link">חזרה לדף הבית</a> |
                 <a href="{{ url_for('logout') }}" class="header-link">התנתק</a>
             </p>
-            <h1>ממליץ הסרטים AI 🤖</h1>
+            <h1>ממליץ הסרטים 💡</h1>
         </header>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -88,31 +74,20 @@
                 <div class="form-group">
                     <label for="mood">איך מצב הרוח שלך היום?</label>
                     <select id="mood" name="mood" class="form-input form-select">
-                        <option value="happy">שמח/ה</option>
-                        <option value="sad">קצת עצוב/ה</option>
-                        <option value="adventurous">בא לי הרפתקה</option>
-                        <option value="thoughtful">בא לי משהו שיגרום לי לחשוב</option>
-                        <option value="romantic">רומנטי/ת</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="genre">איזה ז'אנר מועדף?</label>
-                    <select id="genre" name="genre" class="form-input form-select">
-                        <option value="comedy">קומדיה</option>
-                        <option value="drama">דרמה</option>
-                        <option value="action">אקשן</option>
-                        <option value="sci-fi">מדע בדיוני</option>
-                        <option value="romance">רומנטיקה</option>
-                        <option value="horror">אימה</option>
+                        <option value="happy">שמח/ה (קומדיה)</option>
+                        <option value="sad">קצת עצוב/ה (דרמה)</option>
+                        <option value="adventurous">בא לי הרפתקה (אקשן)</option>
+                        <option value="thoughtful">בא לי משהו מעמיק (דוקו/היסטוריה)</option>
+                        <option value="romantic">רומנטי/ת (רומנטיקה)</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="era">מאיזו תקופה?</label>
                     <select id="era" name="era" class="form-input form-select">
-                        <option value="classic (pre-1980)">קלאסי (לפני 1980)</option>
-                        <option value="the 80s or 90s">שנות ה-80 או ה-90</option>
-                        <option value="the 2000s">שנות ה-2000</option>
-                        <option value="recent (last 5 years)">מהשנים האחרונות</option>
+                        <option value="classic">קלאסי (לפני 1980)</option>
+                        <option value="80s90s">שנות ה-80 או ה-90</option>
+                        <option value="2000s">שנות ה-2000</option>
+                        <option value="recent" selected>מהשנים האחרונות (אחרי 2010)</option>
                     </select>
                 </div>
                 <button type="submit" class="search-button">קבל המלצה!</button>
@@ -121,7 +96,7 @@
 
         <main>
             {% if recommendation %}
-                <h2 class="section-title">ה-AI ממליץ לך על...</h2>
+                <h2 class="section-title">מצאנו לך סרט...</h2>
                 <div class="movie-grid" style="grid-template-columns: 1fr; max-width: 400px; margin: 0 auto;">
                     <div class="movie-card">
                         <img src="{{ recommendation.poster_url }}" alt="פוסטר של {{ recommendation.title }}" class="movie-poster">
