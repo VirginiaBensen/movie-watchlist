@@ -71,6 +71,5 @@ update-config-repo:
         git config --global user.name "GitHub Action Bot"
         git config --global user.email "action@github.com"
         git add chart/values.yaml
-        # commit רק אם יש שינויים
         git commit -m "Update image tag to ${{ needs.build-and-push.outputs.image_tag }}" || echo "No changes to commit"
         git push
