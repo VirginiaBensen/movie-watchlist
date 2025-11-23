@@ -1,51 +1,36 @@
-# values.yaml for the movie-watchlist application
-
-# מספר העותקים (Pods) של האפליקציה שירוצו
 replicaCount: 2
 
-# הגדרות ה-Docker Image שירוץ בקונטיינר
 image:
-  # כתובת מאגר הקונטיינרים. יש לעדכן אותה לכתובת ה-ECR שלך
-  # לדוגמה: 123456789012.dkr.ecr.us-east-1.amazonaws.com/movie-watchlist
-  repository: YOUR_ECR_REPOSITORY_URI
+  repository: 902275209269.dkr.ecr.us-east-1.amazonaws.com/movie-watchlist-backend
   pullPolicy: IfNotPresent
-  # תג הגרסה של האימג'. יעודכן אוטומטית על ידי ה-CI/CD Pipeline
-  tag: ""
+  tag: "5c9b55e" 
 
-# הגדרות ה-Service (ה"מרכזייה" הפנימית של האפליקציה)
+  pullSecrets:
+  - name: ecr-pull-secret
+
 service:
   type: ClusterIP
-  # הפורט שה-Service יאזין אליו ויקבל תעבורה
   port: 80
 
-# הגדרות ה-Ingress (שומר הסף שחושף את האפליקציה לעולם)
 ingress:
   enabled: true
   className: "nginx"
   annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: movies.your-awesome-domain.com # <-- יש לעדכן לכתובת הדומיין האמיתית שלך בעתיד
+    - host: movies.your-awesome-domain.com 
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - movies.your-awesome-domain.com
 
-# הגדרת משאבים (CPU וזיכרון) שהקונטיינר יכול לצרוך
-# מומלץ מאוד להגדיר זאת כדי להבטיח יציבות של המערכת
 resources:
   limits:
-    cpu: 200m     # הגבלה עד 20% מליבת CPU אחת
-    memory: 256Mi # הגבלה עד 256 מגה-בייט של זיכרון
+    cpu: 200m     
+    memory: 256Mi 
   requests:
-    cpu: 100m     # בקשה התחלתית של 10% מליבת CPU
-    memory: 128Mi # בקשה התחלתית של 128 מגה-בייט של זיכרון
+    cpu: 100m     
+    memory: 128Mi 
 
-# הגדרות Auto Scaling (הוספה/הסרה אוטומטית של Pods לפי עומס)
 autoscaling:
   enabled: false
   minReplicas: 1
